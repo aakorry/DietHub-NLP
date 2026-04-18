@@ -1,0 +1,106 @@
+:root {
+  /* Theme B: Indigo + Purple (AI/tech feel) */
+  --primary: #6366F1;
+  --primary-dark: #8B5CF6;
+  --secondary: #F59E0B;
+  --background: #FFFBEB;
+  --card-bg: #FFFFFF;
+  --text: #1E293B;
+  --text-light: #64748B;
+  --border: #E2E8F0;
+  --success: #22C55E;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+  --error-bg: #FEF2F2;
+  
+  /* Category colors - light mode */
+  --cat-low-bg: #DCFCE7;
+  --cat-low-text: #166534;
+  --cat-medium-bg: #FEF3C7;
+  --cat-medium-text: #92400E;
+  --cat-high-bg: #FED7AA;
+  --cat-high-text: #9A3412;
+  --cat-veryhigh-bg: #FECACA;
+  --cat-veryhigh-text: #991B1B;
+  
+  color-scheme: light;
+}
+
+/* Light theme (default) */
+:root[data-theme="light"] {
+  --primary: #6366F1;
+  --primary-dark: #8B5CF6;
+  --background: #FFFBEB;
+  --card-bg: #FFFFFF;
+  --text: #1E293B;
+  --text-light: #64748B;
+  --border: #E2E8F0;
+  --error-bg: #FEF2F2;
+  
+  --cat-low-bg: #DCFCE7;
+  --cat-low-text: #166534;
+  --cat-medium-bg: #FEF3C7;
+  --cat-medium-text: #92400E;
+  --cat-high-bg: #FED7AA;
+  --cat-high-text: #9A3412;
+  --cat-veryhigh-bg: #FECACA;
+  --cat-veryhigh-text: #991B1B;
+}
+
+/* Dark theme */
+:root[data-theme="dark"] {
+  --primary: #818CF8;
+  --primary-dark: #A78BFA;
+  --background: #0F172A;
+  --card-bg: #1E293B;
+  --text: #F1F5F9;
+  --text-light: #94A3B8;
+  --border: #334155;
+  --error-bg: #450A0A;
+  
+  /* Category colors - dark mode (brighter for visibility) */
+  --cat-low-bg: #14532D;
+  --cat-low-text: #86EFAC;
+  --cat-medium-bg: #78350F;
+  --cat-medium-text: #FCD34D;
+  --cat-high-bg: #7C2D12;
+  --cat-high-text: #FDBA74;
+  --cat-veryhigh-bg: #7F1D1D;
+  --cat-veryhigh-text: #FCA5A5;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --primary: #818CF8;
+    --primary-dark: #A78BFA;
+    --background: #0F172A;
+    --card-bg: #1E293B;
+    --text: #F1F5F9;
+    --text-light: #94A3B8;
+    --border: #334155;
+    --error-bg: #450A0A;
+    
+    --cat-low-bg: #14532D;
+    --cat-low-text: #86EFAC;
+    --cat-medium-bg: #78350F;
+    --cat-medium-text: #FCD34D;
+    --cat-high-bg: #7C2D12;
+    --cat-high-text: #FDBA74;
+    --cat-veryhigh-bg: #7F1D1D;
+    --cat-veryhigh-text: #FCA5A5;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
