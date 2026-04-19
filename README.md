@@ -48,6 +48,47 @@ Training/inference notebooks in `model/` now include:
 
 See [ziq/ingbetic](https://huggingface.co/ziq/ingbetic) at HuggingFace Hub and how to train the model using HuggingFace Trainer API [here](https://huggingface.co/ziq/ingbetic/blob/main/train.ipynb).
 
+## Developer Instructions
+
+### Data
+
+- Dataset: `data/data.csv`
+- Training column: `ingredients`
+- Target column: `sugar_per_serving_g` (sugar in grams per serving)
+
+### Models
+
+| Model | Notebook | Output |
+|-------|----------|--------|
+| DistilBERT | `model/train_final.ipynb` | sugar_value (grams) |
+| BERT | `model/train_final.ipynb` | sugar_value (grams) |
+| Llama 7B QLoRA | `model/diabetes_guard_local_m1.ipynb` | sugar_value + sugar_level |
+
+### WHO Sugar Classification
+
+Apply to predictions and training labels:
+
+```
+Low:        <10g    (healthy)
+Medium:     10-25g   (ok)
+High:       25-40g   (limit)
+Very High:  >40g    (avoid)
+```
+
+### Llama 7B Generation
+
+Push both `sugar_value` and `sugar_level` (WHO classification) to Llama 7B for generating explanation.
+
+### Frontend
+
+```bash
+cd DietHub-NLP/frontend
+npm run dev
+```
+
+- Local: `http://localhost:5173`
+- Deploy to Vercel when models are ready
+
 ## Acknowledgement
 
 To all the framework and library maintainers.
