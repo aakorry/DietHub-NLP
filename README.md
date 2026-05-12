@@ -79,15 +79,40 @@ Very High:  >40g    (avoid)
 
 Push both `sugar_value` and `sugar_level` (WHO classification) to Llama 7B for generating explanation.
 
-### Frontend
+### Development Setup
 
+**Prerequisites:**
+- [Ollama](https://ollama.com/) installed with `llama2:7b-chat` model pulled
+- Python 3.x with conda env `ODLG4` (or adjust `run.sh`)
+- Node.js + npm
+
+**Startup (requires two terminals):**
+
+Terminal 1 — Start Ollama:
 ```bash
-cd DietHub-NLP/frontend
-npm run dev
+ollama serve
 ```
 
-- Local: `http://localhost:5173`
-- Deploy to Vercel when models are ready
+Terminal 2 — Start backend + frontend:
+```bash
+./run.sh
+```
+
+- Backend API: `http://localhost:8000`
+- Frontend: `http://localhost:5173`
+- Ollama model: `llama2:7b-chat` (local, no API needed)
+
+**What run.sh does:**
+- Starts FastAPI backend on port 8000 (DistilBERT inference + Llama generation)
+- Starts Vite frontend dev server on port 5173
+- Proxies `/predict`, `/generate`, `/health` through Vite to avoid CORS
+
+**Caching:** Generated recipes and explanations are cached in `backend/recipe_cache.xlsx` and `backend/explanation_cache.xlsx`. Cache lookups are case-insensitive but display original case.
+
+**Uvicorn timing logs:** When the backend is running, the terminal shows per-request timing:
+- `[LLAMA] took Xs` — Llama API call duration
+- `[GENERATE] total=Xs` — total recipe generation
+- `[PREDICT] distilbert=XXXms explain=Xs` — DistilBERT inference + Llama explanation
 
 ## Acknowledgement
 
