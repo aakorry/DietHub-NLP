@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { predictSugar, generateExplanation, getCategoryFromSugar, getWhoInfoStatic, generateRecipe, HEALTH_QUOTES, FUNCTIONAL_QUOTES } from '../services/api'
+import { predictSugar, getCategoryFromSugar, getWhoInfoStatic, generateRecipe, HEALTH_QUOTES, FUNCTIONAL_QUOTES } from '../services/api'
 import Logo from '../components/Logo'
 
 function LoadingSpinner() {
@@ -18,6 +18,9 @@ export default function Home() {
   const [showPredictBtn, setShowPredictBtn] = useState(false)
   const [randomQuote, setRandomQuote] = useState('')
   const typingRef = useRef(null)
+  const explanationTypingRef = useRef(null)
+  const [explanationTyped, setExplanationTyped] = useState('')
+  const [isExplanationTyping, setIsExplanationTyping] = useState(false)
 
   useEffect(() => {
     const randomIndex = Math.floor(Math.random() * FUNCTIONAL_QUOTES.length)
@@ -53,7 +56,25 @@ export default function Home() {
     setIsTyping(false)
   }
 
-  const handleGenerateAndPredict = async () => {
+  const typeWriterExplanation = (text, speed = 10) => {
+    if (explanationTypingRef.current) {
+      clearInterval(explanationTypingRef.current)
+    }
+    setIsExplanationTyping(true)
+    setExplanationTyped('')
+    let index = 0
+    explanationTypingRef.current = setInterval(() => {
+      if (index < text.length) {
+        setExplanationTyped(prev => prev + text.charAt(index))
+        index++
+      } else {
+        clearInterval(explanationTypingRef.current)
+        setIsExplanationTyping(false)
+      }
+    }, speed)
+  }
+
+  const handleRegenerateRecipe = async () => {
     if (!ingredients.trim()) return
     setLoading(true)
     setError('')
@@ -64,13 +85,13 @@ export default function Home() {
 
     try {
       const generated = await generateRecipe(ingredients)
-      await typeWriter(generated, 30)
+      await typeWriter(generated, 15)
 
       setTimeout(() => {
         setIsTyping(false)
         setGeneratedRecipe(true)
         setShowPredictBtn(true)
-      }, generated.length * 30 + 100)
+      }, generated.length * 15 + 100)
     } catch (e) {
       setError(e.message || 'Failed to generate recipe')
     } finally {
@@ -85,21 +106,27 @@ export default function Home() {
     setResult(null)
 
     try {
-      const prediction = await predictSugar(ingredients)
-
-      const sugarMatch = prediction.match(/(\d+\.?\d*)\s*g?/i)
-      const sugarG = sugarMatch ? parseFloat(sugarMatch[1]) : 0
-      const category = getCategoryFromSugar(sugarG)
-      const explanation = await generateExplanation(ingredients, sugarG, category)
+      const response = await predictSugar(ingredients)
 
       setResult({
-        sugarG,
-        category,
-        explanation,
-        whoInfo: getWhoInfoStatic(category)
+        sugarG: response.sugarG,
+        category: response.category,
+        explanation: response.explanation,
+        whoInfo: getWhoInfoStatic(response.category)
       })
+
+      if (generatedRecipe && isTyping) {
+        const recipeLength = ingredients.length
+        setTimeout(() => {
+          typeWriterExplanation(response.explanation, 10)
+        }, recipeLength * 15 + 200)
+      } else if (generatedRecipe) {
+        typeWriterExplanation(response.explanation, 10)
+      } else {
+        typeWriterExplanation(response.explanation, 10)
+      }
     } catch (e) {
-      setError(e.message || 'Something went wrong. Make sure HF_TOKEN is set.')
+      setError(e.message || 'Something went wrong. Make sure Ollama is running (ollama serve) and backend is up.')
     } finally {
       setLoading(false)
     }
@@ -107,6 +134,11 @@ export default function Home() {
 
   const handleClear = () => {
     cancelTyping()
+    if (explanationTypingRef.current) {
+      clearInterval(explanationTypingRef.current)
+    }
+    setIsExplanationTyping(false)
+    setExplanationTyped('')
     setIngredients('')
     setResult(null)
     setError('')
@@ -118,7 +150,7 @@ export default function Home() {
     if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
       e.preventDefault()
       if (generateMode) {
-        handleGenerateAndPredict()
+        handleRegenerateRecipe()
       } else {
         handlePredict()
       }
@@ -167,15 +199,15 @@ export default function Home() {
         <div className="button-group">
           {generateMode ? (
             <button
-              onClick={handleGenerateAndPredict}
+              onClick={handleRegenerateRecipe}
               disabled={loading || !ingredients.trim() || isTyping}
               className="generate-btn"
             >
-              {loading ? <><LoadingSpinner /> Generating...</> : isTyping ? <><LoadingSpinner /> Typing...</> : 'Generate + Predict'}
+              {loading ? <><LoadingSpinner /> Generating...</> : isTyping ? <><LoadingSpinner /> Typing...</> : 'ReGenerate Recipe'}
             </button>
           ) : (
             <button onClick={handlePredict} disabled={loading || !ingredients.trim()} className="predict-btn">
-              {loading ? <><LoadingSpinner /> Analyzing...</> : 'Predict Sugar'}
+              {loading ? <><LoadingSpinner /> {isExplanationTyping ? 'Typing...' : 'Analyzing...'}</> : 'Predict Sugar'}
             </button>
           )}
           <button onClick={handleClear} className="secondary" disabled={loading}>
@@ -208,7 +240,7 @@ export default function Home() {
           <span className="error-icon">⚠</span>
           <div className="error-content">
             <p>Error: {error}</p>
-            <p className="hint">Make sure VITE_HF_TOKEN is set in your .env file</p>
+            <p className="hint">Make sure backend is running (./run.sh) and Ollama is up (ollama serve)</p>
           </div>
         </div>
       )}
@@ -227,8 +259,8 @@ export default function Home() {
           </div>
 
           <div className="explanation-card">
-            <h3>Health Explanation</h3>
-            <p>{result.explanation}</p>
+            <h3>Recipe Recommendations</h3>
+            <p>{explanationTyped || result.explanation}</p>
           </div>
 
           <div className="who-guide">

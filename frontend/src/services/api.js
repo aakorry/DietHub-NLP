@@ -1,89 +1,108 @@
-import { HfInference } from '@huggingface/inference'
-import { CONFIG } from '../config'
+// =========================================================
+// BACKEND CONFIGURATION
+// =========================================================
 
-const DEMO_MODE = true  // Set false when you have real token
+// Use relative URLs — requests go through Vite proxy (vite.config.js)
+// to avoid CORS issues in local development
+const API_BASE = ''
 
-const getHfClient = () => {
-  const token = import.meta.env.VITE_HF_TOKEN
-  if (!token || token === 'YOUR_TOKEN_HERE' || token.startsWith('hf_')) {
-    if (DEMO_MODE) return null
-    throw new Error('Please set VITE_HF_TOKEN in your .env file')
-  }
-  return new HfInference(token)
-}
+const DEMO_MODE = false  // Set false to use local backend
+
+// =========================================================
+// HELPER FUNCTIONS
+// =========================================================
+
+// const getHfClient = () => {
+//   const token = import.meta.env.VITE_HF_TOKEN
+//   if (!token || token === 'YOUR_TOKEN_HERE' || token.startsWith('hf_')) {
+//     if (DEMO_MODE) return null
+//     throw new Error('Please set VITE_HF_TOKEN in your .env file')
+//   }
+//   return new HfInference(token)
+// }
+
+// =========================================================
+// MAIN API FUNCTIONS
+// =========================================================
 
 export async function predictSugar(ingredients) {
-  const hf = getHfClient()
-  
-  // Demo mode - estimate based on ingredients
-  if (!hf) {
-    const sugarWords = ['sugar', 'honey', 'syrup', 'molasses', 'brown sugar', 'powdered sugar', 'corn syrup']
-    const lowerIng = ingredients.toLowerCase()
-    let estimatedSugar = 5 // default low
-    
-    for (const word of sugarWords) {
-      if (lowerIng.includes(word)) {
-        if (word === 'honey' || word === 'syrup' || word === 'molasses') {
-          estimatedSugar = 25 + Math.random() * 15
-        } else if (word === 'brown sugar' || word === 'corn syrup') {
-          estimatedSugar = 20 + Math.random() * 15
-        } else {
-          estimatedSugar = 15 + Math.random() * 15
-        }
-        break
-      }
+  if (DEMO_MODE) {
+    const result = demoPredictSugar(ingredients)
+    return {
+      prediction: result,
+      explanation: demoGenerateExplanation(result.sugarG, result.category)
     }
-    
-    const category = getCategoryFromSugar(estimatedSugar)
-    return `${estimatedSugar.toFixed(1)}g - ${category}`
   }
-  
-  const response = await hf.chatCompletion({
-    model: CONFIG.modelId,
-    messages: [{
-      role: 'user',
-      content: `Recipe: ${ingredients}\nPredict sugar per serving in grams. Format: "Xg - Category" where Category is Low/Medium/High/Very High based on WHO: Low(<10g), Medium(10-25g), High(25-40g), Very High(>40g)`
-    }],
-    max_new_tokens: 50
-  })
-  
-  return response.choices[0].message.content
+
+  try {
+    const response = await fetch(`${API_BASE}/predict`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipe: ingredients }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return {
+      prediction: `${data.sugar_g.toFixed(1)}g - ${data.category}`,
+      sugarG: data.sugar_g,
+      category: data.category,
+      explanation: data.explanation
+    }
+  } catch (error) {
+    console.error('Predict error, falling back to demo:', error)
+    const result = demoPredictSugar(ingredients)
+    return {
+      prediction: result,
+      explanation: demoGenerateExplanation(result.sugarG, result.category)
+    }
+  }
+}
+
+function demoPredictSugar(ingredients) {
+  const sugarWords = ['sugar', 'honey', 'syrup', 'molasses', 'brown sugar', 'powdered sugar', 'corn syrup']
+  const lowerIng = ingredients.toLowerCase()
+  let estimatedSugar = 5 // default low
+
+  for (const word of sugarWords) {
+    if (lowerIng.includes(word)) {
+      if (word === 'honey' || word === 'syrup' || word === 'molasses') {
+        estimatedSugar = 25 + Math.random() * 15
+      } else if (word === 'brown sugar' || word === 'corn syrup') {
+        estimatedSugar = 20 + Math.random() * 15
+      } else {
+        estimatedSugar = 15 + Math.random() * 15
+      }
+      break
+    }
+  }
+
+  const category = getCategoryFromSugar(estimatedSugar)
+  return {
+    prediction: `${estimatedSugar.toFixed(1)}g - ${category}`,
+    sugarG: estimatedSugar,
+    category: category
+  }
 }
 
 export async function generateExplanation(ingredients, sugarG, category) {
-  const hf = getHfClient()
-  
-  // Demo mode - generate explanation
-  if (!hf) {
-    const explanations = {
-      'Low': `This recipe has ${sugarG.toFixed(1)}g sugar, which is LOW. Additional health benefits. Recommended for diabetes prevention and overall wellbeing.`,
-      'Medium': `This recipe has ${sugarG.toFixed(1)}g sugar, which is MEDIUM. Acceptable intake. Consume in moderation as part of a balanced diet.`,
-      'High': `This recipe has ${sugarG.toFixed(1)}g sugar, which is HIGH. Limit consumption for diabetes management. Pair with fiber-rich foods to help balance blood sugar.`,
-      'Very High': `This recipe has ${sugarG.toFixed(1)}g sugar, which is VERY HIGH. High risk for blood sugar spikes. Avoid frequent consumption, especially for those managing diabetes.`
-    }
-    return explanations[category] || explanations['Medium']
+  if (DEMO_MODE) {
+    return demoGenerateExplanation(sugarG, category)
   }
-  
-  const response = await hf.chatCompletion({
-    model: CONFIG.modelId,
-    messages: [{
-      role: 'user',
-      content: `Recipe: ${ingredients}\nSugar: ${sugarG}g (${category})\nWHO: ${getWhoInfo(category)}\nExplain health impact and give dietary advice in 1-2 sentences:`
-    }],
-    max_new_tokens: 80
-  })
-  
-  return response.choices[0].message.content
+  return null
 }
 
-function getWhoInfo(category) {
-  const info = {
-    'Low': 'Additional health benefits. Recommended.',
-    'Medium': 'Acceptable. Consume in moderation.',
-    'High': 'High sugar. Limit consumption.',
-    'Very High': 'Very high sugar. Avoid frequent consumption.'
+function demoGenerateExplanation(sugarG, category) {
+  const explanations = {
+    'Low': `This recipe has ${sugarG.toFixed(1)}g sugar, which is LOW. Additional health benefits. Recommended for diabetes prevention and overall wellbeing.`,
+    'Medium': `This recipe has ${sugarG.toFixed(1)}g sugar, which is MEDIUM. Acceptable intake. Consume in moderation as part of a balanced diet.`,
+    'High': `This recipe has ${sugarG.toFixed(1)}g sugar, which is HIGH. Limit consumption for diabetes management. Pair with fiber-rich foods to help balance blood sugar.`,
+    'Very High': `This recipe has ${sugarG.toFixed(1)}g sugar, which is VERY HIGH. High risk for blood sugar spikes. Avoid frequent consumption, especially for those managing diabetes.`
   }
-  return info[category] || ''
+  return explanations[category] || explanations['Medium']
 }
 
 export function getCategoryFromSugar(g) {
@@ -102,6 +121,51 @@ export function getWhoInfoStatic(category) {
   }
   return info[category] || { range: 'N/A', description: 'N/A', advice: 'N/A' }
 }
+
+// =========================================================
+// HUGGINGFACE BACKUP (commented out - kept for reference)
+// =========================================================
+
+// export async function predictSugar_HF(ingredients) {
+//   const hf = getHfClient()
+//   if (!hf) return demoPredictSugar(ingredients)
+  
+//   const response = await hf.chatCompletion({
+//     model: CONFIG.modelId,
+//     messages: [{
+//       role: 'user',
+//       content: `Recipe: ${ingredients}\nPredict sugar per serving in grams. Format: "Xg - Category" where Category is Low/Medium/High/Very High based on WHO: Low(<10g), Medium(10-25g), High(25-40g), Very High(>40g)`
+//     }],
+//     max_new_tokens: 50
+//   })
+//   return response.choices[0].message.content
+// }
+
+// export async function generateExplanation_HF(ingredients, sugarG, category) {
+//   const hf = getHfClient()
+//   if (!hf) return demoGenerateExplanation(sugarG, category)
+  
+//   const whoInfo = {
+//     'Low': 'Additional health benefits. Recommended.',
+//     'Medium': 'Acceptable. Consume in moderation.',
+//     'High': 'High sugar. Limit consumption.',
+//     'Very High': 'Very high sugar. Avoid frequent consumption.'
+//   }
+  
+//   const response = await hf.chatCompletion({
+//     model: CONFIG.modelId,
+//     messages: [{
+//       role: 'user',
+//       content: `Recipe: ${ingredients}\nSugar: ${sugarG}g (${category})\nWHO: ${whoInfo[category]}\nExplain health impact and give dietary advice in 1-2 sentences:`
+//     }],
+//     max_new_tokens: 80
+//   })
+//   return response.choices[0].message.content
+// }
+
+// =========================================================
+// DEMO RECIPES
+// =========================================================
 
 const DEMO_RECIPES = {
   'chocolate cake': `Ingredients:
@@ -176,30 +240,40 @@ Instructions:
 }
 
 export async function generateRecipe(dishName) {
-  const hf = getHfClient()
-  const dish = dishName.toLowerCase().trim()
-  
-  if (!hf) {
-    await new Promise(resolve => setTimeout(resolve, 800))
-    const demoRecipe = DEMO_RECIPES[dish] || DEMO_RECIPES['default']
-    return demoRecipe
+  if (!dishName || !dishName.trim()) {
+    throw new Error('Dish name is required')
   }
-  
-  const response = await hf.chatCompletion({
-    model: CONFIG.modelId,
-    messages: [{
-      role: 'user',
-      content: `Generate a complete recipe for "${dishName}" with:
-1. Ingredients list (with measurements)
-2. Step-by-step cooking instructions
 
-Format clearly with "Ingredients:" and "Instructions:" sections. Be detailed and accurate.`
-    }],
-    max_new_tokens: 300
-  })
-  
-  return response.choices[0].message.content
+  if (DEMO_MODE) {
+    await new Promise(resolve => setTimeout(resolve, 800))
+    const dish = dishName.toLowerCase().trim()
+    return DEMO_RECIPES[dish] || DEMO_RECIPES['default']
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dish_name: dishName }),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Generation failed: ${response.status}`)
+    }
+
+    const data = await response.json()
+    return data.recipe
+  } catch (error) {
+    console.error('Recipe generation error, falling back to demo:', error)
+    await new Promise(resolve => setTimeout(resolve, 800))
+    const dish = dishName.toLowerCase().trim()
+    return DEMO_RECIPES[dish] || DEMO_RECIPES['default']
+  }
 }
+
+// =========================================================
+// QUOTES
+// =========================================================
 
 export const HEALTH_QUOTES = [
   "A healthy diet is the foundation of diabetes prevention and management.",
