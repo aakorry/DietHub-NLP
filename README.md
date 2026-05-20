@@ -60,9 +60,12 @@ See [ziq/ingbetic](https://huggingface.co/ziq/ingbetic) at HuggingFace Hub and h
 
 | Model | Notebook | Output |
 |-------|----------|--------|
-| DistilBERT | `model/train_final.ipynb` | sugar_value (grams) |
-| BERT | `model/train_final.ipynb` | sugar_value (grams) |
+| DistilBERT | `model/train_rev2.3.ipynb` | sugar_value (grams) |
+| BERT | `model/train_rev2.3.ipynb` | sugar_value (grams) |
 | Llama 7B QLoRA | `model/diabetes_guard_local_m1.ipynb` | sugar_value + sugar_level |
+
+### XAI
+- included SHAP, LIME, CAPTUM and Counterfactual in model/train_rev2.3.ipynb 
 
 ### WHO Sugar Classification
 
