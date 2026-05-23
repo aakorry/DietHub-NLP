@@ -1,4 +1,4 @@
-INFO:     Started server process [73763]
+INFO:     Started server process [88957]
 INFO:     Waiting for application startup.
 /Users/byron/opt/anaconda3/envs/ODLG4/lib/python3.11/site-packages/huggingface_hub/file_download.py:942: FutureWarning: `resume_download` is deprecated and will be removed in version 1.0.0. Downloads always resume when possible. If you want to force a new download, use `force_download=True`.
   warnings.warn(
@@ -7,15 +7,7 @@ INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 Loading model and tokenizer...
 Model loaded successfully!
 Initializing explanation cache...
-Explanation cache: {'total_entries': 27, 'cache_file': '/Users/byron/Documents/GitHub/DietHub-NLP/backend/explanation_cache.xlsx'}
+Explanation cache: {'total_entries': 28, 'cache_file': '/Users/byron/Documents/GitHub/DietHub-NLP/backend/explanation_cache.xlsx'}
 Initializing recipe cache...
 Recipe cache: {'total_entries': 11, 'cache_file': '/Users/byron/Documents/GitHub/DietHub-NLP/backend/recipe_cache.xlsx'}
-INFO:     127.0.0.1:49820 - "GET /health HTTP/1.1" 200 OK
-[LLAMA] took 46.0s
-[PREDICT] distilbert=1369ms explain=46.1s
-INFO:     127.0.0.1:49835 - "POST /predict HTTP/1.1" 200 OK
-INFO:     Shutting down
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
-INFO:     Finished server process [73763]
-Shutting down...
+INFO:     127.0.0.1:58028 - "GET /health HTTP/1.1" 200 OK
