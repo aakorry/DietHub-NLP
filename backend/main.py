@@ -85,7 +85,7 @@ def call_llama_api(prompt: str) -> str:
     response.raise_for_status()
     result = response.json()
     print(f"[LLAMA] took {elapsed:.1f}s")
-    return result["message"]["content"]
+    return result["message"]["content"].strip()
 
 
 def generate_explanation(recipe: str, sugar_g: float, category: str) -> str:
@@ -93,7 +93,7 @@ def generate_explanation(recipe: str, sugar_g: float, category: str) -> str:
 
     cached = explanation_cache.get(recipe, category)
     if cached:
-        return cached
+        return cached.strip()
 
     explanation = call_llama_api(build_explanation_prompt(recipe, sugar_g, category))
     explanation_cache.set(recipe, category, sugar_g, explanation)

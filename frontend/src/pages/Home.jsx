@@ -40,7 +40,8 @@ export default function Home() {
     let index = 0
     typingRef.current = setInterval(() => {
       if (index < text.length) {
-        setIngredients(prev => prev + text.charAt(index))
+        const char = text.charAt(index)
+        setIngredients(prev => prev + char)
         index++
       } else {
         clearInterval(typingRef.current)
@@ -65,7 +66,8 @@ export default function Home() {
     let index = 0
     explanationTypingRef.current = setInterval(() => {
       if (index < text.length) {
-        setExplanationTyped(prev => prev + text.charAt(index))
+        const char = text.charAt(index)
+        setExplanationTyped(prev => prev + char)
         index++
       } else {
         clearInterval(explanationTypingRef.current)
@@ -108,22 +110,24 @@ export default function Home() {
     try {
       const response = await predictSugar(ingredients)
 
+      const trimmed = response.explanation.trimStart()
+
       setResult({
         sugarG: response.sugarG,
         category: response.category,
-        explanation: response.explanation,
+        explanation: trimmed,
         whoInfo: getWhoInfoStatic(response.category)
       })
 
       if (generatedRecipe && isTyping) {
         const recipeLength = ingredients.length
         setTimeout(() => {
-          typeWriterExplanation(response.explanation, 10)
+          typeWriterExplanation(trimmed, 0.5)
         }, recipeLength * 15 + 200)
       } else if (generatedRecipe) {
-        typeWriterExplanation(response.explanation, 10)
+        typeWriterExplanation(trimmed, 0.5)
       } else {
-        typeWriterExplanation(response.explanation, 10)
+        typeWriterExplanation(trimmed, 0.5)
       }
     } catch (e) {
       setError(e.message || 'Something went wrong. Make sure Ollama is running (ollama serve) and backend is up.')
